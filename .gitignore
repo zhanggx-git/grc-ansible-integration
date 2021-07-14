@@ -1,0 +1,4 @@
+ansible/ansible.cfg
+ansible/collections/ansible_collections
+tls/
+vault_password

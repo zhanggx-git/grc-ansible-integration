@@ -1,0 +1,16 @@
+---
+apiVersion: policy.open-cluster-management.io/v1beta1
+kind: PolicyAutomation
+metadata:
+  name: ansible-example-certificatepolicy-policy-automation
+  namespace: acm-grc-ansible-example
+spec:
+  automationDef:
+    extra_vars:
+      policy_name: ansible-example-certificatepolicy
+      target_namespace: acm-grc-ansible-example
+    name: GRC Ansible Integration Blog
+    secret: ansible-tower
+    type: AnsibleJob
+  mode: once
+  policyRef: ansible-example-certificatepolicy

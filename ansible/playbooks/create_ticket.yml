@@ -1,0 +1,73 @@
+---
+- name: Create a Service Now ticket
+  hosts: create_ticket
+  vars_files:
+    - ../vaults/secret-vars.yml
+  tasks:
+    - name: Check that the mandatory variables are defined
+      ansible.builtin.assert:
+        that:
+          - "{{ item }} is defined"
+        fail_msg: "{{ item }} must be set"
+      with_items:
+        - snow_host
+        - snow_password
+        - snow_username
+        - target_namespace
+
+    - name: Create a temporary directory for the virtualenv
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: -snow-ansible
+      environment:
+        PYTHONPATH: "{{ python_path_override | default(lookup('env', 'PYTHONPATH')) }}"
+      register: temp_dir
+
+    - name: Install the required Python dependencies
+      ansible.builtin.pip:
+        name: "{{ py_dep }}"
+        state: present
+        virtualenv: "{{ temp_dir.path }}"
+        virtualenv_command: python3 -m venv
+      environment:
+        PYTHONPATH: "{{ python_path_override | default(lookup('env', 'PYTHONPATH')) }}"
+      with_items:
+        - netaddr
+        - pysnow
+        - requests
+      loop_control:
+        loop_var: py_dep
+
+    - name: Use the created virtualenv
+      ansible.builtin.set_fact:
+        ansible_python_interpreter: "{{ temp_dir.path }}/bin/python"
+
+    - name: Create a change request
+      servicenow.servicenow.snow_record:
+        state: present
+        table: incident
+        username: "{{ snow_username }}"
+        password: "{{ snow_password }}"
+        host: "{{ snow_host }}"
+        data:
+          caller_id: "{{ snow_username }}"
+          short_description: "ACM {{ policy_name }} violation"
+          description:
+            "{{ policy_name }} violation: one or more certificates are expiring soon in a secret in
+            the namespace {{ target_namespace }} on the clusters:
+            {{ target_clusters | join(', ') }}"
+          priority: 2
+          severity: 2
+      environment:
+        PYTHONPATH: "{{ python_path_override | default(lookup('env', 'PYTHONPATH')) }}"
+      register: new_incident
+
+    - name: Delete the temporary directory for the virtualenv
+      ansible.builtin.file:
+        path: "{{ temp_dir.path }}"
+        state: absent
+      environment:
+        PYTHONPATH: "{{ python_path_override | default(lookup('env', 'PYTHONPATH')) }}"
+
+    - debug:
+        var: new_incident.record

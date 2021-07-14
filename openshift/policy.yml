@@ -1,0 +1,54 @@
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  name: ansible-example-certificatepolicy
+  namespace: acm-grc-ansible-example
+  annotations:
+    policy.open-cluster-management.io/standards: NIST-CSF
+    policy.open-cluster-management.io/categories: PR.DS Data Security
+    policy.open-cluster-management.io/controls: PR.DS-2 Data-in-transit
+spec:
+  remediationAction: inform
+  disabled: false
+  policy-templates:
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: CertificatePolicy
+        metadata:
+          name: ansible-example-certificatepolicy
+        spec:
+          namespaceSelector:
+            include:
+              - acm-grc-ansible-example
+            exclude:
+              - kube-*
+          remediationAction: inform
+          severity: medium
+          minimumDuration: 720h
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: ansible-example-binding
+  namespace: acm-grc-ansible-example
+placementRef:
+  name: ansible-example-placement
+  kind: PlacementRule
+  apiGroup: apps.open-cluster-management.io
+subjects:
+  - name: ansible-example-certificatepolicy
+    kind: Policy
+    apiGroup: policy.open-cluster-management.io
+---
+apiVersion: apps.open-cluster-management.io/v1
+kind: PlacementRule
+metadata:
+  name: ansible-example-placement
+  namespace: acm-grc-ansible-example
+spec:
+  clusterConditions:
+    - status: 'True'
+      type: ManagedClusterConditionAvailable
+  clusterSelector:
+    matchExpressions: []
