@@ -1,4 +1,4 @@
-# ACM GRC Ansible Integration Blog Resources
+# ACM GRC Ansible Integration Example
 
 An example of the Red Hat Advanced Cluster Management (ACM) Governance, Risk,
 and Compliance (GRC) integration with Ansible for a blog post.
